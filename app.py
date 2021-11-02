@@ -19,7 +19,7 @@ CORS(app)
 @app.route('/', methods=['GET'])
 def index():
 
-	return "<H1>PROYECTO 2 </H1>"
+	return "<H1>BACKEND PROYECTO 2 </H1>"
 
 @app.route('/login', methods=['POST'])
 def login():
