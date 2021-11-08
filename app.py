@@ -1,17 +1,26 @@
 from datetime import date
 from flask import Flask, request, jsonify
-from flask.helpers import url_for
 from flask_cors import CORS
 from CRUD_USUARIOS import CRUD_USUARIOS
 from CRUD_PUBLICACIONES import CRUD_PUBLICACIONES
-
+import time
 
 objusuarios=CRUD_USUARIOS()
 objpublicaciones =CRUD_PUBLICACIONES()
 
-#CREACION DEL ADMINISTRADOR 
-objusuarios.crearusuario("Cesar Reyes","M","admin","admin@ipc1.com","admin@ipc1","Administrador")
+#CREACIÓN DEL ADMINISTRADOR 
+objusuarios.crearusuario("Cesar Reyes","Masculino","admin","admin@ipc1.com","admin@ipc1","Administrador")
+objusuarios.crearusuario("Willy Cano","Masculino","wirocama","willyamigo@gmail.com","201700594","Administrador")
 
+#CREACIÓN DE PUBLICACIONES
+objpublicaciones.agregarpublicacion("Imagen","https://th.bing.com/th/id/OIP.y42HDI45TCnYROM-NfnckAHaE8?pid=ImgDet&w=900&h=600&rs=1","04/11/21", "Fotografía",1,"wirocama")
+objpublicaciones.agregarpublicacion("Imagen","https://images2.alphacoders.com/609/609571.jpg","04/11/21", "Música",1,"wirocama")
+
+#CREACIÓN DE CATEGORIAS
+objpublicaciones.agregarcategoria("Fotografía")
+objpublicaciones.agregarcategoria("Música")
+
+#<iframe width="560" height="315" src="https://www.youtube.com/embed/2ElZTk8SzgQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
 
 app = Flask(__name__)
 CORS(app)
@@ -29,53 +38,51 @@ def login():
         contrasenia = request.json["contrasenia"]
         
         verificador = objusuarios.validarusuario(usuario,contrasenia)
-        if verificador is not False:
-            return{
-                "id":verificador.id,
-                "nombre":verificador.nombre,
-                "genero":verificador.genero,
-                "usuario":verificador.nusuario,
-                "correo":verificador.correo,
-                "contraseña":verificador.contrasenia,
-                "tipo usuario":verificador.tipousuario
-            }
-        return{
-            "Estado":"Usuario no encontrado"
+        
+        return {
+            "data": verificador
         }
 
 @app.route('/crear_usuario', methods=['POST'])
 def crear_usuario():
+
     if request.method == 'POST':
         nombre = request.json["nombre"]
         genero = request.json["genero"]
         nusuario = request.json["nusuario"]
         correo = request.json["correo"]
         contrasenia = request.json["contrasenia"]
+        conf_contrasenia = request.json["conf_contrasenia"]
         tipousuario = request.json["tipousuario"]
+        
+        if contrasenia == conf_contrasenia:
 
-        crear = objusuarios.crearusuario(nombre,genero,nusuario,correo,contrasenia,tipousuario)
-        if crear is not False:
-            return {
-                "nombre":nombre,
-                "genero":genero,
-                "usuario":nusuario,
-                "correo":correo,
-                "contraseña":contrasenia,
-                "tipo usuario":tipousuario    
+            crear = objusuarios.crearusuario(nombre,genero,nusuario,correo,contrasenia,tipousuario)
+
+            return{
+                "data": crear
             }
-        return {
-            "ERROR":"El usuario ya existe"
+
+
+        return{
+            "data":{
+                "mensaje": "La contraseña de verificación no coincide",
+                "estado": 3
+            }
         }
+
 @app.route('/ver_usuario', methods=['POST'])
 def ver_usuario():
     if request.method == 'POST':
         id = request.json["id"]
 
-        ver = objusuarios.verusuario(id)
+        ver = objusuarios.verusuario(int(id))
         if ver is not False:
-            return ver
+            return {
+                "data": ver
+            }
         return {
-            "ERROR":"Informacion no Disponible"
+            "mensaje":"Informacion no Disponible"
         }
 
 @app.route('/modificar_usuario', methods=['POST'])
@@ -88,20 +95,30 @@ def modificar_usuario():
         nusuario = request.json["nusuario"]
         correo = request.json["correo"]
         contrasenia = request.json["contrasenia"]
-        
-        modificar = objusuarios.modificarusuario(id, nombre, genero, nusuario, correo, contrasenia)
+        conf_contrasenia = request.json["conf_contrasenia"]
 
-        if modificar is not False:
+        if contrasenia == conf_contrasenia:
+
+            validar = objusuarios.disponibleusuario(int(id),nusuario)
+
+            if validar is not False:
+                modificar = objusuarios.modificarusuario(int(id), nombre, genero, nusuario, correo, contrasenia)
+                return{
+                    "data": modificar
+                }
             return {
-                "nombre":nombre,
-                "genero":genero,
-                "usuario":nusuario,
-                "correo":correo,
-                "contraseña":contrasenia    
+                "data": {
+                    "mensaje": "El Nombre de Usuario no esta disponible",
+                    "estado": 2
+                }
+            }              
+        return{
+            "data":{
+                "mensaje": "La contraseña de verificación no coincide",
+                "estado": 3
             }
-        return {
-            "ERROR":"No se pudo modificar la información"
-        }    
+        } 
+
 @app.route('/eliminar_usuario', methods=['POST'])
 def eliminar_usuario():
     if request.method == 'POST':
@@ -121,24 +138,38 @@ def eliminar_usuario():
 @app.route('/crear_publicacion', methods=['POST'])
 def crear_publicacion():
     if request.method == 'POST':
-
-       type = request.json["type"]
+ 
+       tipo = request.json["type"]
        url = request.json["url"]
-       date  = request.json["date"]
+       date = request.json["date"]
        category = request.json["category"]
+       idU = request.json["idU"]
+       usuario = request.json["usuario"]
+       estado = request.json["estado"]
 
-       crearp = objpublicaciones.agregarpublicacion(type,url,date,category)
+       if estado == 1:
+           crearp = objpublicaciones.agregarpublicacion(tipo,url,time.strftime("%d/%m/%y"),category,idU,usuario)
+           
+       elif estado == 2:
+           crearp = objpublicaciones.agregarpublicacion(tipo,url,date,category,idU,usuario)
+           
 
-       if crearp is not False:
+       objpublicaciones.agregarcategoria(category)
 
-           return {
-                "type": type,
-                "url": url,
-                "date": date,
-                "category":category
-            }
+       return crearp
 
+@app.route('/publicaciones', methods=['GET'])
+def publicaciones():
+    
+    return objpublicaciones.verpublicaciones()
 
+@app.route('/categorias', methods=['GET'])
+def categorias():
+
+    return {
+        "data":objpublicaciones.mostrarcategorias()
+    }    
+          
 @app.route('/modificar_publicacion', methods=['POST'])
 def modificar_publicacion():
     if request.method == 'POST':

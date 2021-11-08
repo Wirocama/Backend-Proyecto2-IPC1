@@ -61,7 +61,6 @@ class usuarios:
             "nombre":self.nombre,
             "genero":self.genero,
             "nusuario":self.nusuario,
-            "correo":self.nusuario,
-            "contrasenia":self.contrasenia,
-            "tipo de usuario":self.tipousuario
+            "correo":self.correo,
+            "tipousuario":self.tipousuario
         }
